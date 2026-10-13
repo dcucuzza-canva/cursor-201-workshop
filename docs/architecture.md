@@ -160,4 +160,4 @@ All responses are JSON. Success is `{ "data": ... }`, lists are `{ "data": [...]
 | `npm run test:e2e` | Playwright specs in `e2e/` against a dev server on port 3100 with `prisma/e2e.db` |
 | `npm run lint`, `npm run typecheck` | ESLint, `tsc --noEmit` |
 
-Tests whose name starts with `[filter-bug]` cover a known bug (see step 3 of the workshop).
+Tests whose name starts with `[filter-bug]` are regression tests for the invoice status filter bug fixed in step 3.

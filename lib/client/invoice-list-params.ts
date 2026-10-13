@@ -18,7 +18,7 @@ export const DEFAULT_INVOICE_LIST_PARAMS: InvoiceListParams = { sort: "dueDate",
 
 export function toInvoiceSearchParams(params: Partial<InvoiceListParams>): URLSearchParams {
   const search = new URLSearchParams();
-  if (params.status) search.set("state", params.status);
+  if (params.status) search.set("status", params.status);
   if (params.currency) search.set("currency", params.currency);
   if (params.q) search.set("q", params.q);
   if (params.sort && params.sort !== DEFAULT_INVOICE_LIST_PARAMS.sort) search.set("sort", params.sort);
@@ -30,7 +30,7 @@ export function toInvoiceSearchParams(params: Partial<InvoiceListParams>): URLSe
 export function fromInvoiceSearchParams(search: URLSearchParams): InvoiceListParams {
   const page = Number(search.get("page") ?? "1");
   return {
-    status: (search.get("state") as InvoiceStatus | null) ?? undefined,
+    status: (search.get("status") as InvoiceStatus | null) ?? undefined,
     currency: (search.get("currency") as Currency | null) ?? undefined,
     q: search.get("q") ?? undefined,
     sort: (search.get("sort") as InvoiceSortField | null) ?? DEFAULT_INVOICE_LIST_PARAMS.sort,
