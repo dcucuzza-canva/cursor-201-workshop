@@ -1,8 +1,10 @@
+import { toCsv } from "@/lib/csv";
 import { db } from "@/lib/db";
-import { buildAgingReport, buildCollectionsQueue, type AgingInput } from "@/lib/domain/aging";
-import { addDays } from "@/lib/domain/dates";
+import { buildAgingReport, buildCollectionsQueue, COLLECTIONS_ACTION_LABELS, type AgingInput } from "@/lib/domain/aging";
+import { addDays, toIsoDate } from "@/lib/domain/dates";
 import { ACTIVE_DISPUTE_STATUSES } from "@/lib/domain/dispute-status";
 import { asInvoiceStatus, OPEN_INVOICE_STATUSES } from "@/lib/domain/invoice-status";
+import { asCurrency, toDecimalString } from "@/lib/money";
 
 async function loadAgingInputs(): Promise<AgingInput[]> {
   const invoices = await db.invoice.findMany({
@@ -31,6 +33,26 @@ export async function agingReport(asOf = new Date()) {
 
 export async function collectionsQueue(asOf = new Date()) {
   return buildCollectionsQueue(await loadAgingInputs(), asOf);
+}
+
+const COLLECTIONS_CSV_HEADER = ["Customer", "Invoice", "Currency", "Balance", "Due date", "Days late", "Bucket", "Next step"];
+
+export async function collectionsQueueCsv(asOf = new Date()) {
+  const queue = await collectionsQueue(asOf);
+  const rows = queue.items.map((item) => [
+    item.customerName,
+    item.invoiceNumber,
+    item.currency,
+    toDecimalString(item.balanceMinor, asCurrency(item.currency)),
+    item.dueDate.slice(0, 10),
+    String(item.daysPastDue),
+    item.bucket,
+    COLLECTIONS_ACTION_LABELS[item.suggestedAction],
+  ]);
+  return {
+    filename: `collections-${toIsoDate(asOf)}.csv`,
+    content: toCsv([COLLECTIONS_CSV_HEADER, ...rows]),
+  };
 }
 
 export async function dashboardSummary(asOf = new Date()) {

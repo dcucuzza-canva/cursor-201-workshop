@@ -44,6 +44,15 @@ export function okList<T>(data: T[], meta: ListMeta) {
   return NextResponse.json({ data, meta });
 }
 
+export function csv(content: string, filename: string) {
+  return new Response(content, {
+    headers: {
+      "content-type": "text/csv; charset=utf-8",
+      "content-disposition": `attachment; filename="${filename}"`,
+    },
+  });
+}
+
 export async function parseJson<S extends z.ZodType>(request: NextRequest, schema: S): Promise<z.infer<S>> {
   let body: unknown;
   try {

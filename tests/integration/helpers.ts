@@ -31,11 +31,7 @@ export interface CallOptions<P extends Record<string, string>> {
   params?: P;
 }
 
-/** Invokes an App Router route handler directly, the way Next.js would. */
-export async function callRoute<P extends Record<string, string> = Record<string, never>, T = unknown>(
-  handler: Handler<P>,
-  options: CallOptions<P>,
-): Promise<{ status: number; body: T; headers: Headers }> {
+function invoke<P extends Record<string, string>>(handler: Handler<P>, options: CallOptions<P>): Promise<Response> {
   const search = options.query ? `?${new URLSearchParams(options.query).toString()}` : "";
   const request = new NextRequest(`http://tally.test${options.path}${search}`, {
     method: options.method ?? "GET",
@@ -45,8 +41,25 @@ export async function callRoute<P extends Record<string, string> = Record<string
     },
     body: options.body === undefined ? undefined : JSON.stringify(options.body),
   });
-  const response = await handler(request, { params: Promise.resolve((options.params ?? {}) as P) });
+  return handler(request, { params: Promise.resolve((options.params ?? {}) as P) });
+}
+
+/** Invokes an App Router route handler directly, the way Next.js would. */
+export async function callRoute<P extends Record<string, string> = Record<string, never>, T = unknown>(
+  handler: Handler<P>,
+  options: CallOptions<P>,
+): Promise<{ status: number; body: T; headers: Headers }> {
+  const response = await invoke(handler, options);
   return { status: response.status, body: (await response.json()) as T, headers: response.headers };
+}
+
+/** Like callRoute, for handlers that respond with something other than JSON (e.g. CSV). */
+export async function callRouteText<P extends Record<string, string> = Record<string, never>>(
+  handler: Handler<P>,
+  options: CallOptions<P>,
+): Promise<{ status: number; text: string; headers: Headers }> {
+  const response = await invoke(handler, options);
+  return { status: response.status, text: await response.text(), headers: response.headers };
 }
 
 export async function findInvoice(where: { status?: string; customerId?: string }) {

@@ -39,6 +39,7 @@ lib/db.ts       the one PrismaClient
 | `lib/http/` | `route.ts` (`handle`, `ok`, `okList`, `created`, `parseJson`, `parseQuery`, `parseParams`), `errors.ts` | Every handler is wrapped in `handle()` so thrown errors become the standard error shape. |
 | `lib/auth/` | Mocked current user (cookie `tally_user`) | `actorFromRequest(req)` in route handlers, `currentActor()` in server components. |
 | `lib/client/` | Browser-side helpers: `api.ts` (fetch wrapper), `invoice-list-params.ts` | Client components only. |
+| `lib/csv.ts` | CSV building for exports | Pure. Escapes commas, quotes and newlines, and neutralises spreadsheet formulas. |
 | `app/api/` | JSON route handlers | Thin: parse → actor → one service call → respond. |
 | `app/**/page.tsx` | Server-rendered pages | Read through services; mutations go through the API from client components. |
 | `components/` | UI building blocks, grouped by feature | Client components call the API with `apiRequest` and then `router.refresh()`. |
@@ -123,7 +124,7 @@ Every state change writes an `AuditEntry` in the same transaction: actor (or `sy
 
 ## API
 
-All responses are JSON. Success is `{ "data": ... }`, lists are `{ "data": [...], "meta": { "page", "pageSize", "total", "totalPages" } }`. Errors always look like:
+All responses are JSON except CSV exports. Success is `{ "data": ... }`, lists are `{ "data": [...], "meta": { "page", "pageSize", "total", "totalPages" } }`. Errors always look like:
 
 ```json
 { "error": { "code": "VALIDATION_FAILED", "message": "Request validation failed", "details": [{ "path": "amountMinor", "message": "..." }] } }
@@ -154,6 +155,7 @@ All responses are JSON. Success is `{ "data": ... }`, lists are `{ "data": [...]
 | POST | `/api/disputes/:id/resolve` | Admin only. `{ "resolution": "accepted" \| "rejected", "note": "5-1000 chars" }` → `{ "dispute", "creditNote" }` (`creditNote` is `null` when nothing was credited). `409` unless the dispute is `open` or `under_review` |
 | GET | `/api/reports/aging` | Optional `asOf` |
 | GET | `/api/collections` | Optional `asOf` |
+| GET | `/api/collections/export` | Optional `asOf`. The queue as a `text/csv` attachment, `collections-YYYY-MM-DD.csv`: Customer, Invoice, Currency, Balance (plain decimal), Due date, Days late, Bucket, Next step. Fields escaped by `lib/csv.ts` (quoting, formula neutralising). Errors stay JSON. Any role |
 | GET | `/api/customers`, `/api/customers/:id` | |
 | GET | `/api/customers/:id/statement` | Optional `currency` (defaults to the customer's billing currency). Invoices (not draft or void) as debits, payments (full amount) and credit notes as credits, by date with a running balance and `closingBalanceMinor` |
 | GET | `/api/audit` | `entityType`, `entityId`, paging |
